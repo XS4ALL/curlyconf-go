@@ -10,6 +10,9 @@ type ParseError struct {
 }
 
 func (e *ParseError) Error() string {
+	if e == nil || len(e.Detail) == 0 {
+		return "curlyconf: unknown empty error";
+	}
 	return e.Detail[0]
 }
 
@@ -254,7 +257,7 @@ func (p *Parser) stmts(sw *StructWriter, end uint64) {
 //
 //	Start the actual parsing.
 //
-func (p *Parser) Parse(obj interface{}) (err *ParseError) {
+func (p *Parser) Parse(obj interface{}) (err error) {
 	p.stmts(NewStructWriter(obj), TokEOF)
 	if p.errCount > 0 {
 		if p.errCount > p.maxErrors && p.errCount != 1000 {
@@ -268,7 +271,7 @@ func (p *Parser) Parse(obj interface{}) (err *ParseError) {
 //
 //	Return a new Parser object.
 //
-func newConfParser(src int, data string, how int) (p *Parser, err *ParseError) {
+func newConfParser(src int, data string, how int) (p *Parser, err error) {
 	var t *Tokenizer
 	var e error
 	if src == 0 {
@@ -277,7 +280,7 @@ func newConfParser(src int, data string, how int) (p *Parser, err *ParseError) {
         	t, e = ConfTokenizerFromString(data)
 	}
         if e != nil {
-		err = &ParseError{ Detail: []string{ err.Error() } }
+		err = &ParseError{ Detail: []string{ e.Error() } }
                 return
         }
 	p = &Parser{
@@ -309,12 +312,12 @@ func newConfParser(src int, data string, how int) (p *Parser, err *ParseError) {
 	return
 }
 
-func ConfParser(file string, how int) (p *Parser, err *ParseError) {
+func ConfParser(file string, how int) (p *Parser, err error) {
 	p, err = newConfParser(0, file, how)
 	return
 }
 
-func ConfParserFromString(data string, how int) (p *Parser, err *ParseError) {
+func ConfParserFromString(data string, how int) (p *Parser, err error) {
 	p, err = newConfParser(1, data, how)
 	return
 }

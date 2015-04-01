@@ -30,7 +30,7 @@ file format used by, for example, named.conf and dhcpd.conf.
 
 	func main {
 		var top Persons
-		p, err := curlyconf.Parser("file.cfg", curlyconf.ParseSemi)
+		p, err := curlyconf.ConfParser("file.cfg", curlyconf.ParserSemi)
 		if err == nil {
 			p.Parse(&top)
 		}
