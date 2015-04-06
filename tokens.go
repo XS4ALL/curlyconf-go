@@ -81,15 +81,19 @@ var tokdef = []*Tokdef{
 
 func ConfTokenizer(file string) (t *Tokenizer, err error) {
 	t, err = NewTokenizer(file, tokdef)
-	t.IgnoreComments(TokComment)
-	t.SetSpace(" \t\r\n")
+	if err == nil {
+		t.IgnoreComments(TokComment)
+		t.SetSpace(" \t\r\n")
+	}
 	return
 }
 
 func ConfTokenizerFromString(data string) (t *Tokenizer, err error) {
 	t, err = NewTokenizerFromString(data, tokdef)
-	t.IgnoreComments(TokComment)
-	t.SetSpace(" \t\r\n")
+	if err == nil {
+		t.IgnoreComments(TokComment)
+		t.SetSpace(" \t\r\n")
+	}
 	return
 }
 

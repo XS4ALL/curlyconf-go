@@ -24,6 +24,8 @@ var nsf = map[string]uint64{
 }
 
 var colonPortRegexp = regexp.MustCompile(`:([0-9]+|[a-z]+[-0-9a-z]*[0-9a-z])$`)
+var ipv4Regexp = regexp.MustCompile(`^([0-9]+\.)[0-9]+$`)
+var ipv6Regexp = regexp.MustCompile(`:.*:`)
 
 func suffixMult(s string) (r string, m uint64) {
 	m = 1
@@ -83,14 +85,19 @@ func convTCPAddr(v string) (val reflect.Value, e error) {
 	return
 }
 
-func convIP(v string) (val reflect.Value, e error) {
-	ip := net.ParseIP(v)
-	if ip != nil {
+func convIPAddr(v string) (val reflect.Value, e error) {
+	n := "ip"
+	if ipv4Regexp.MatchString(v) {
+		n = "ip4"
+	}
+	if ipv6Regexp.MatchString(v) {
+		n = "ip6"
+	}
+	ip, e := net.ResolveIPAddr(n, v)
+	if e == nil {
 		var obj interface{}
-		obj = ip
+		obj = *ip
 		val = reflect.ValueOf(obj)
-	} else {
-		e = fmt.Errorf("not an IP address")
 	}
 	return
 }
@@ -215,8 +222,8 @@ func SetValue(val reflect.Value, s string) (err error) {
 	switch val.Type().String() {
 		case "net.TCPAddr":
 			newval, err = convTCPAddr(s)
-		case "net.IP":
-			newval, err = convIP(s)
+		case "net.IPAddr":
+			newval, err = convIPAddr(s)
 		case "net.IPNet":
 			newval, err = convIPNet(s)
 		case "time.Duration":
@@ -246,7 +253,7 @@ func CanSetValue(t reflect.Type) (r bool) {
 			r = true
 		case reflect.Struct:
 			switch t.String() {
-			case "net.IP", "net.IPNet", "net.TCPAddr":
+			case "net.IPAddr", "net.IPNet", "net.TCPAddr":
 				r = true
 			default:
 				r = hasParseInterface(t)

@@ -39,11 +39,9 @@ func NewStructWriter(obj interface{}) *StructWriter {
 	case reflect.Ptr:
         	s.stru = stru.Elem()
 	default:
-		fmt.Printf("hmz1, %s\n", stru.Type().String())
 		panic("NewStructWriter: object is not a pointer-to-struct")
 	}
 	if s.stru.Kind() != reflect.Struct {
-		fmt.Printf("hmz2, %s\n", stru.Type().String())
 		panic("NewStructWriter: object is not a pointer-to-struct")
 	}
 	return &s

@@ -1,6 +1,7 @@
 package curlyconf
 
 import (
+	"errors"
         "fmt"
         "strconv"
 )
@@ -266,6 +267,20 @@ func (p *Parser) Parse(obj interface{}) (err error) {
 		err = &p.errors
 	}
 	return
+}
+
+//
+//	Get the full error string
+//
+func (p *Parser) LongError() error {
+	msg := ""
+	for i, e := range p.errors.Detail {
+		msg = msg + e
+		if i < len(p.errors.Detail) - 1 {
+			msg += "\n"
+		}
+	}
+	return errors.New(msg)
 }
 
 //
