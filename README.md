@@ -11,8 +11,8 @@ file format used by, for example, named.conf and dhcpd.conf.
 	}
 	person snoopy {
 		fullname "Snoopy";
-		address 5.6.7.8;
 	}
+	person snoopy address 5.6.7.8;
 
 ## Example code
 
