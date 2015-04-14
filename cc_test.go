@@ -40,8 +40,9 @@ file file1 {
 	dir	/var/tmp;
 	attr	v1,
 		v2;
-	ptr	"Hello World";
 }
+
+file file1 ptr "Hello World";
 
 file file2 {
 	directory /var/tmp;
@@ -66,10 +67,15 @@ func testconf(t *testing.T, data string, how int) {
                 err = p.Parse(&top)
         }
         if err != nil {
-                for _, m := range err.Detail {
-                        t.Logf("E: %s\n", m)
-                }
+		if e2, ok := err.(*ParseError); ok {
+                	for _, m := range e2.Detail {
+                       		t.Logf("E: %s\n", m)
+                	}
+		} else {
+                       		t.Logf("E: %s\n", err)
+		}
 		t.Fail()
+
         }
 	if len(top.File) != 2 {
 		t.Error("expected 2 file entries")
@@ -92,7 +98,7 @@ func testconf(t *testing.T, data string, how int) {
 	if top.File[0].Attr[1] != 2 {
 		t.Error("file1.attr != v1")
 	}
-	if *top.File[0].Ptr != `"Hello World"` {
+	if top.File[0].Ptr == nil || *top.File[0].Ptr != `"Hello World"` {
 		t.Error("file1.ptr != Hello World")
 	}
 }

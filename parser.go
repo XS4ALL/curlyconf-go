@@ -70,6 +70,18 @@ func (p *Parser) error(t *Tokinfo, s string) {
 }
 
 //
+//	peek() looks for an optional token
+//
+func (p *Parser) peek(want uint64) (tok *Tokinfo) {
+	next := p.tok.Peek()
+	if (next.Token & want) != 0 {
+		debug("peek: got %s\n", esc(next.Value))
+		tok = next
+	}
+	return
+}
+
+//
 //	accept() looks for an optional token
 //
 func (p *Parser) accept(want uint64) (tok *Tokinfo) {
@@ -137,6 +149,7 @@ func (p *Parser) section(sname string, field *Field) {
 	var ok bool
 	var tok *Tokinfo
 	var name string
+	var flatmode bool
 
 	debug("section\n")
 
@@ -148,17 +161,26 @@ func (p *Parser) section(sname string, field *Field) {
 		}
 		name = string(tok.Value)
 	}
-	tok, ok = p.expect(p.sectionStart, p.sectionStartStr)
-	if !ok {
-		p.recover(tok)
-		return
+
+	//
+	// flatmode is section { key val; } --> section key val;
+	//
+	tok = p.peek(TokIdent)
+	if tok != nil {
+		flatmode = true
+	} else {
+		tok, ok = p.expect(p.sectionStart, p.sectionStartStr)
+		if !ok {
+			p.recover(tok)
+			return
+		}
 	}
 
 	oldname := p.sectionName
 	p.sectionName = sname
 
 	// New section starts here
-	err := field.Set(name)
+	err := field.Section(name)
 	if err != nil {
 		p.error(tok, err.Error())
 		p.recover(tok)
@@ -166,11 +188,16 @@ func (p *Parser) section(sname string, field *Field) {
 	}
 
 	sw := NewStructWriter(field.PtrToElem())
-	p.stmts(sw, p.sectionEnd)
-	if p.sectionEnd == TokEnd {
-		p.expect(p.stmtEnd, p.stmtEndStr)
-	} else {
+	if flatmode {
+		p.stmt(sw)
 		p.accept(p.stmtEnd)
+	} else {
+		p.stmts(sw, p.sectionEnd)
+		if p.sectionEnd == TokEnd {
+			p.expect(p.stmtEnd, p.stmtEndStr)
+		} else {
+			p.accept(p.stmtEnd)
+		}
 	}
 
 	p.sectionName = oldname

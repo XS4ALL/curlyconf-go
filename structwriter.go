@@ -138,6 +138,56 @@ func (f *Field) HasName() (r bool) {
 }
 
 //
+//	Initialize section.
+//
+func (f *Field) Section(s string) (err error) {
+
+	// If this is a pointer or a slice, allocate a new Value
+	switch f.fieldType.Kind() {
+		case reflect.Ptr:
+			if f.val.IsNil() {
+				// allocate new struct
+				elemPtr := reflect.New(f.elemType)
+				f.val.Set(elemPtr)
+				f.elem = reflect.Indirect(elemPtr)
+			} else {
+				// use existing struct
+				f.elem = reflect.Indirect(f.val)
+			}
+		case reflect.Slice:
+			// see if we're adding to an existing section
+			var elem reflect.Value
+			var found bool
+			l := f.val.Len()
+			for i := 0; i < l; i++ {
+				elem = f.val.Index(i)
+				n := elem.FieldByName("Name_")
+				if n.IsValid() && n.String() == s {
+					found = true
+					break
+				}
+			}
+			if found {
+				f.elem = elem
+			} else {
+				elem := reflect.Indirect(reflect.New(f.elemType))
+				f.val.Set(reflect.Append(f.val, elem))
+				f.elem = f.val.Index(f.val.Len() - 1)
+			}
+		default:
+			f.elem = f.val
+	}
+
+	// Set the name if we can.
+	v := f.elem.FieldByName("Name_")
+	if v.IsValid() {
+		v.SetString(s)
+	}
+	return
+}
+
+
+//
 //	Set a field to a value.
 //
 func (f *Field) Set(s string) (err error) {
@@ -156,15 +206,7 @@ func (f *Field) Set(s string) (err error) {
 			f.elem = f.val
 	}
 
-	if f.elemType.Kind() == reflect.Struct && !CanSetValue(f.elemType) {
-		// This is a struct. Set the name if we can.
-		v := f.elem.FieldByName("Name_")
-		if v.IsValid() {
-			v.SetString(s)
-		}
-	} else {
-		err = SetValue(f.elem, s)
-	}
+	err = SetValue(f.elem, s)
 	return
 }
 
