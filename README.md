@@ -19,7 +19,7 @@ file format used by, for example, named.conf and dhcpd.conf.
 	import (
 		"fmt"
 		"net"
-		"github.xs4all.net/XS4ALL/beheer/curlyconf-go"
+		"github.xs4all.net/XS4ALL/curlyconf-go"
 	)
 
 	type cfgPerson struct {
@@ -36,7 +36,7 @@ file format used by, for example, named.conf and dhcpd.conf.
 		var top cfgMain
 		p, err := curlyconf.ConfParser("file.cfg", curlyconf.ParserSemi)
 		if err == nil {
-			p.Parse(&top)
+			err = p.Parse(&top)
 		}
 		if err != nil {
 			fmt.Println(p.LongError())
