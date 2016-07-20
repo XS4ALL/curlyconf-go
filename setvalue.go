@@ -162,6 +162,13 @@ func setPrimitive(val reflect.Value, s string) (err error) {
 				val.SetFloat(fl)
 			}
 		case reflect.String:
+			if len(s) > 0 && s[0] == '"' {
+				s, err = strconv.Unquote(s)
+				if err == nil {
+					val.SetString(s)
+				}
+				break
+			}
 			val.SetString(s)
 		default:
 			err = fmt.Errorf("unsupported type %s",
