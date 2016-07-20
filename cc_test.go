@@ -23,8 +23,8 @@ type Main struct {
 	File		[]File
 }
 
-func (a *Attr) Parse(s string) (err error) {
-	switch s {
+func (a *Attr) UnmarshalText(s []byte) (err error) {
+	switch string(s) {
 		case "v1":
 			*a = 1
 		case "v2":

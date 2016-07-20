@@ -66,11 +66,13 @@ a field in a struct in the code.
 * net.IPAddr
 * net.TCPAddr
 * time.Duration
-* any type that has a Parse(string) (e error) method
+* any type that complies with the encoding.TextUnmarshaler interface.
 
 If a field is a slice of one of the above types, the value can be a
 comma seperated list. The field can also be a pointer to one of the
 above types, a value will be allocated and the pointer set to it.
 
 ## Sections and structs
+
+T.B.D.
 

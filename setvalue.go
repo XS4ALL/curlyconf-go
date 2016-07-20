@@ -6,6 +6,7 @@
 package curlyconf
 
 import (
+	"encoding"
 	"fmt"
 	"net"
 	"reflect"
@@ -113,41 +114,6 @@ func convIPNet(v string) (val reflect.Value, e error) {
 }
 
 //
-//	See if this type has a Parse() method.
-//
-func hasParseInterface(t reflect.Type) bool {
-	switch t.Kind() {
-		case reflect.Array, reflect.Chan, reflect.Func,
-		     reflect.Interface, reflect.Map, reflect.Ptr,
-		     reflect.Slice, reflect.UnsafePointer:
-		default:
-			// convert to pointer
-			t = reflect.PtrTo(t)
-	}
-	_, hasParse := t.MethodByName("Parse")
-	return hasParse
-}
-
-//
-//	If this value has a Parse() method, return the value.
-//
-func parseInterface(val reflect.Value) (obj interface{ Parse(string) error }) {
-	switch val.Type().Kind() {
-		case reflect.Array, reflect.Chan, reflect.Func,
-		     reflect.Interface, reflect.Map, reflect.Ptr,
-		     reflect.Slice, reflect.UnsafePointer:
-		default:
-			// convert to pointer
-			val = toPtr(val)
-	}
-	_, hasParse := val.Type().MethodByName("Parse")
-	if hasParse == true {
-		obj = val.Interface().(interface { Parse(string) error })
-	}
-	return
-}
-
-//
 //	Set primitive value - bool, int, float, string
 //
 func setPrimitive(val reflect.Value, s string) (err error) {
@@ -209,11 +175,13 @@ func setPrimitive(val reflect.Value, s string) (err error) {
 //
 func SetValue(val reflect.Value, s string) (err error) {
 
-	// If the type has a Parse() method, use it.
-	obj := parseInterface(val)
-	if obj != nil {
-		err = obj.Parse(s)
-		return
+	// If the type complies with the TextUnmarshaler interface, use it.
+	if val.CanInterface() {
+		intf := toPtr(val).Interface()
+		if obj, ok := intf.(encoding.TextUnmarshaler); ok {
+			err = obj.UnmarshalText([]byte(s))
+			return
+		}
 	}
 
 	// Special support for some types
@@ -256,7 +224,8 @@ func CanSetValue(t reflect.Type) (r bool) {
 			case "net.IPAddr", "net.IPNet", "net.TCPAddr":
 				r = true
 			default:
-				r = hasParseInterface(t)
+				tumtype := reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+				r = t.Implements(tumtype)
 			}
 	}
 	return
