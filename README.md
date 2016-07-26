@@ -3,6 +3,16 @@
 Curlyconf is a configuration file reader for the configuration
 file format used by, for example, named.conf and dhcpd.conf.
 
+## License
+
+Copyight (C) XS4ALL Internet bv 2016
+
+Mozilla Public License 2.0
+
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v. 2.0. If a copy of the MPL was not distributed with this file,
+you can obtain one at http://mozilla.org/MPL/2.0/.
+
 ## Example config
 
 	person charlie {
