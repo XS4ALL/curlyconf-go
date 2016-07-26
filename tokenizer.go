@@ -7,48 +7,48 @@ import (
 	"unicode/utf8"
 )
 
-type Pos struct {
+type tokPos struct {
 	Line	int
 	Column	int
 	offset	int
 }
 
-type Tokdef struct {
+type tokDef struct {
 	Match	string
 	Token	uint64
 	re	*regexp.Regexp
 }
 
-type Tokenizer struct {
+type tokenizer struct {
 	file	string
 	data	[]byte
-	pos	Pos
-	tokdef	[]*Tokdef
+	pos	tokPos
+	tokdef	[]*tokDef
 	space	*regexp.Regexp
 	comment	uint64
 }
 
-type Tokinfo struct {
+type tokInfo struct {
 	Token	uint64
 	Value	[]byte
-	Pos	Pos
-	tkz	*Tokenizer
+	Pos	tokPos
+	tkz	*tokenizer
 }
 
 const (
-	TokUnknown = 1 << (63 - iota)
-	TokEOF
+	tokUnknown = 1 << (63 - iota)
+	tokEOF
 )
 
-const TokAny = 0x00ffffffffffffff
+const tokAny = 0x00ffffffffffffff
 
-func newTokenizer(data []byte, td []*Tokdef) (l *Tokenizer)  {
-	l = &Tokenizer{ 
+func newtokenizer(data []byte, td []*tokDef) (l *tokenizer)  {
+	l = &tokenizer{ 
 		file: `[internal]`,
 		data: data,
 		tokdef: td,
 		space: regexp.MustCompile(`^[\r\t ]+`),
-		pos: Pos{Line: 1, Column: 1},
+		pos: tokPos{Line: 1, Column: 1},
 	}
 	for i := range td {
 		td[i].re = regexp.MustCompile("^" + td[i].Match)
@@ -56,34 +56,34 @@ func newTokenizer(data []byte, td []*Tokdef) (l *Tokenizer)  {
 	return
 }
 
-func NewTokenizerFromString(data string, td []*Tokdef) (l *Tokenizer, err error)  {
-	l = newTokenizer([]byte(data), td)
+func newTokenizerFromString(data string, td []*tokDef) (l *tokenizer, err error)  {
+	l = newtokenizer([]byte(data), td)
 	return
 }
 
-func NewTokenizer(fn string, td []*Tokdef) (l *Tokenizer, err error)  {
+func newTokenizer(fn string, td []*tokDef) (l *tokenizer, err error)  {
 	data, err := ioutil.ReadFile(fn)
 	if err != nil {
 		return
 	}
-	l = newTokenizer(data, td)
+	l = newtokenizer(data, td)
 	l.file = fn
 	return
 }
 
-func (l *Tokenizer) SetPos(t *Tokinfo) {
+func (l *tokenizer) SetPos(t *tokInfo) {
 	l.pos = t.Pos
 }
 
-func (l *Tokenizer) SetSpace(spc string) {
+func (l *tokenizer) SetSpace(spc string) {
 	l.space = regexp.MustCompile(`^[` + spc + `]+`)
 }
 
-func (l *Tokenizer) IgnoreComments(c uint64) {
+func (l *tokenizer) IgnoreComments(c uint64) {
 	l.comment = c
 }
 
-func (l *Tokenizer) updatePos(s []byte) {
+func (l *tokenizer) updatePos(s []byte) {
 	if (s == nil) {
 		return
 	}
@@ -97,7 +97,7 @@ func (l *Tokenizer) updatePos(s []byte) {
 	l.pos.offset += len(s)
 }
 
-func (l *Tokenizer) skipSpace() {
+func (l *tokenizer) skipSpace() {
 	s := l.space.Find(l.data[l.pos.offset:])
 	if s != nil {
 		//fmt.Printf("space found len %d\n", len(s))
@@ -105,19 +105,19 @@ func (l *Tokenizer) skipSpace() {
 	}
 }
 
-func (l *Tokenizer) peek() (t *Tokinfo) {
+func (l *tokenizer) peek() (t *tokInfo) {
 	l.skipSpace()
-	t = &Tokinfo{}
+	t = &tokInfo{}
 	t.tkz = l
 	t.Pos = l.pos
 	if (l.pos.offset == len(l.data)) {
-		t.Token = TokEOF;
+		t.Token = tokEOF;
 		return
 	}
 
 	//fmt.Printf("start at offset %d\n", l.pos.offset)
 
-	t.Token = TokUnknown
+	t.Token = tokUnknown
 	matchlen := -1
 
 	for i := range l.tokdef {
@@ -136,7 +136,7 @@ func (l *Tokenizer) peek() (t *Tokinfo) {
 	return
 }
 
-func (l *Tokenizer) Peek() (t *Tokinfo) {
+func (l *tokenizer) Peek() (t *tokInfo) {
 	for {
 		t = l.peek()
 		if (t.Token & l.comment) == 0 {
@@ -147,19 +147,19 @@ func (l *Tokenizer) Peek() (t *Tokinfo) {
 	return
 }
 
-func (l *Tokenizer) Next() (t *Tokinfo) {
+func (l *tokenizer) Next() (t *tokInfo) {
 	t = l.Peek()
-	if (t.Token != TokEOF) {
+	if (t.Token != tokEOF) {
 		l.updatePos(t.Value)
 	}
 	return
 }
 
-func (t *Tokinfo) Error(txt string) (ret []string) {
+func (t *tokInfo) Error(txt string) (ret []string) {
 
 	ret = append(ret, fmt.Sprintf("%s:%d.%d: ",
 			t.tkz.file, t.Pos.Line, t.Pos.Column) + txt)
-	if t.Token == TokEOF {
+	if t.Token == tokEOF {
 		return
 	}
 

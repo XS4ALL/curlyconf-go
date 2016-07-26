@@ -180,7 +180,7 @@ func setPrimitive(val reflect.Value, s string) (err error) {
 //
 //	Set a field to a value.
 //
-func SetValue(val reflect.Value, s string) (err error) {
+func setValue(val reflect.Value, s string) (err error) {
 
 	// If the type complies with the TextUnmarshaler interface, use it.
 	if val.CanInterface() {
@@ -219,7 +219,7 @@ func SetValue(val reflect.Value, s string) (err error) {
 	return
 }
 
-func CanSetValue(t reflect.Type) (r bool) {
+func canSetValue(t reflect.Type) (r bool) {
 	switch t.Kind() {
 		case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16,
 		     reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8,

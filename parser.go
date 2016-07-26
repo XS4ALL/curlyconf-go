@@ -1,24 +1,39 @@
 package curlyconf
 
 import (
-	"errors"
         "fmt"
         "strconv"
 )
 
+// This is returned on error. Detail contains a few lines that
+// print the lines that have errors, and pinpoint the location.
 type ParseError struct {
-	Detail	[]string
+	Detail	[]string		// detailed error (line/position)
 }
 
-func (e *ParseError) Error() string {
-	if e == nil || len(e.Detail) == 0 {
+// Returns a short (one-line) error, useful for logs.
+func (pe *ParseError) Error() string {
+	if pe == nil || len(pe.Detail) == 0 {
 		return "curlyconf: unknown empty error";
 	}
-	return e.Detail[0]
+	return pe.Detail[0]
 }
 
+// Returns a multiline error (for printing on tty)
+func (pe *ParseError) LongError() string {
+	msg := ""
+	for i, e := range pe.Detail {
+		msg = msg + e
+		if i < len(pe.Detail) - 1 {
+			msg += "\n"
+		}
+	}
+	return msg
+}
+
+
 type Parser struct {
-	tok		*Tokenizer
+	tok		*tokenizer
 	stmtEnd		uint64		// \n or ;
 	sectionStart	uint64		// { or '\n'
 	sectionEnd	uint64		// } or 'end'
@@ -31,10 +46,11 @@ type Parser struct {
 	maxErrors	int
 }
 
+// Types of configuration file syntax.
 const (
-	ParserSemi = iota
-	ParserNL
-	ParserDiablo
+	ParserSemi = iota	// End 'statement' with semicolon
+	ParserNL		// End 'statement' with newline
+	ParserDiablo		// diablo config file format (deprecated)
 )
 
 func esc(b []byte) string {
@@ -52,7 +68,7 @@ func debug(format string, a ...interface{}) {
 //
 //	Add an error to the list of errors.
 //
-func (p *Parser) error(t *Tokinfo, s string) {
+func (p *Parser) error(t *tokInfo, s string) {
 	if p.sectionName != "" {
 		s = "section " + p.sectionName + ": " + s
 	}
@@ -72,7 +88,7 @@ func (p *Parser) error(t *Tokinfo, s string) {
 //
 //	peek() looks for an optional token
 //
-func (p *Parser) peek(want uint64) (tok *Tokinfo) {
+func (p *Parser) peek(want uint64) (tok *tokInfo) {
 	next := p.tok.Peek()
 	if (next.Token & want) != 0 {
 		debug("peek: got %s\n", esc(next.Value))
@@ -84,7 +100,7 @@ func (p *Parser) peek(want uint64) (tok *Tokinfo) {
 //
 //	accept() looks for an optional token
 //
-func (p *Parser) accept(want uint64) (tok *Tokinfo) {
+func (p *Parser) accept(want uint64) (tok *tokInfo) {
 	next := p.tok.Peek()
 	if (next.Token & want) != 0 {
 		debug("accept: got %s\n", esc(next.Value))
@@ -96,9 +112,9 @@ func (p *Parser) accept(want uint64) (tok *Tokinfo) {
 //
 //	expect() demands a certain token, otherwise error
 //
-func (p *Parser) expect(want uint64, ws string) (tok *Tokinfo, match bool) {
+func (p *Parser) expect(want uint64, ws string) (tok *tokInfo, match bool) {
 	tok = p.tok.Next()
-	if tok.Token == TokEOF {
+	if tok.Token == tokEOF {
 		p.error(tok, "unexpected end-of-file")
 		p.errCount = 1000
 		return
@@ -115,12 +131,12 @@ func (p *Parser) expect(want uint64, ws string) (tok *Tokinfo, match bool) {
 //
 //	error seen, try to recover.
 //
-func (p *Parser) recover(tok *Tokinfo) {
+func (p *Parser) recover(tok *tokInfo) {
 	if tok == nil {
 		tok = p.tok.Next()
 	}
 	for {
-		if tok.Token == TokEOF {
+		if tok.Token == tokEOF {
 			return
 		}
 		if (tok.Token & p.stmtEnd) != 0 {
@@ -145,16 +161,16 @@ func (p *Parser) recover(tok *Tokinfo) {
 //
 //	New section
 //
-func (p *Parser) section(sname string, field *Field) {
+func (p *Parser) section(sname string, field *structField) {
 	var ok bool
-	var tok *Tokinfo
+	var tok *tokInfo
 	var name string
 	var flatmode bool
 
 	debug("section\n")
 
 	if field.HasName() {
-		tok, ok = p.expect(TokValue, "section-name")
+		tok, ok = p.expect(tokValue, "section-name")
 		if !ok {
 			p.recover(tok)
 			return
@@ -165,7 +181,7 @@ func (p *Parser) section(sname string, field *Field) {
 	//
 	// flatmode is section { key val; } --> section key val;
 	//
-	tok = p.peek(TokIdent)
+	tok = p.peek(tokIdent)
 	if tok != nil {
 		flatmode = true
 	} else {
@@ -187,13 +203,13 @@ func (p *Parser) section(sname string, field *Field) {
 		return
 	}
 
-	sw := NewStructWriter(field.PtrToElem())
+	sw := newStructWriter(field.PtrToElem())
 	if flatmode {
 		p.stmt(sw)
 		p.accept(p.stmtEnd)
 	} else {
 		p.stmts(sw, p.sectionEnd)
-		if p.sectionEnd == TokEnd {
+		if p.sectionEnd == tokEnd {
 			p.expect(p.stmtEnd, p.stmtEndStr)
 		} else {
 			p.accept(p.stmtEnd)
@@ -207,7 +223,7 @@ func (p *Parser) section(sname string, field *Field) {
 //
 //	parse a single statement
 //
-func (p *Parser) stmt(sw *StructWriter) {
+func (p *Parser) stmt(sw *structWriter) {
 
 	// Empty statements are allowed
 	if p.accept(p.stmtEnd) != nil {
@@ -216,7 +232,7 @@ func (p *Parser) stmt(sw *StructWriter) {
 	}
 
 	// Expect identifier
-	tok, ok := p.expect(TokIdent, "identifier")
+	tok, ok := p.expect(tokIdent, "identifier")
 	debug("stmt %s\n", esc(tok.Value))
 	if !ok {
 		p.recover(tok)
@@ -224,7 +240,7 @@ func (p *Parser) stmt(sw *StructWriter) {
 	}
 
 	// See if we known this identifier
-	field, err := sw.Field(string(tok.Value))
+	field, err := sw.structField(string(tok.Value))
 	if err != nil {
 		p.error(tok, err.Error())
 		p.recover(tok)
@@ -244,7 +260,7 @@ func (p *Parser) stmt(sw *StructWriter) {
 	}
 
 	for {
-		tok, ok = p.expect(TokValue, "value")
+		tok, ok = p.expect(tokValue, "value")
 		if !ok {
 			break
 		}
@@ -252,11 +268,11 @@ func (p *Parser) stmt(sw *StructWriter) {
 		if err != nil {
 			p.error(tok, err.Error())
 		}
-		if !field.IsSlice() || p.accept(TokComma) == nil {
+		if !field.IsSlice() || p.accept(tokComma) == nil {
 			tok, ok = p.expect(p.stmtEnd, p.stmtEndStr)
 			break
 		}
-		p.accept(TokNL)
+		p.accept(tokNL)
 	}
 
 	if !ok {
@@ -269,7 +285,7 @@ func (p *Parser) stmt(sw *StructWriter) {
 //
 //	Parse a bunch of statements
 //
-func (p *Parser) stmts(sw *StructWriter, end uint64) {
+func (p *Parser) stmts(sw *structWriter, end uint64) {
 	for {
 		debug("stmts\n")
 		if p.accept(end) != nil {
@@ -286,7 +302,7 @@ func (p *Parser) stmts(sw *StructWriter, end uint64) {
 //	Start the actual parsing.
 //
 func (p *Parser) Parse(obj interface{}) (err error) {
-	p.stmts(NewStructWriter(obj), TokEOF)
+	p.stmts(newStructWriter(obj), tokEOF)
 	if p.errCount > 0 {
 		if p.errCount > p.maxErrors && p.errCount != 1000 {
 			p.error(nil, "too many errors")
@@ -297,29 +313,15 @@ func (p *Parser) Parse(obj interface{}) (err error) {
 }
 
 //
-//	Get the full error string
-//
-func (p *Parser) LongError() error {
-	msg := ""
-	for i, e := range p.errors.Detail {
-		msg = msg + e
-		if i < len(p.errors.Detail) - 1 {
-			msg += "\n"
-		}
-	}
-	return errors.New(msg)
-}
-
-//
 //	Return a new Parser object.
 //
 func newConfParser(src int, data string, how int) (p *Parser, err error) {
-	var t *Tokenizer
+	var t *tokenizer
 	var e error
 	if src == 0 {
-        	t, e = ConfTokenizer(data)
+        	t, e = confTokenizer(data)
 	} else {
-        	t, e = ConfTokenizerFromString(data)
+        	t, e = confTokenizerFromString(data)
 	}
         if e != nil {
 		err = &ParseError{ Detail: []string{ e.Error() } }
@@ -327,25 +329,25 @@ func newConfParser(src int, data string, how int) (p *Parser, err error) {
         }
 	p = &Parser{
 		tok: t,
-		stmtEnd: TokSemi,
+		stmtEnd: tokSemi,
 		stmtEndStr: "';'",
-		sectionStart: TokLCBrace,
+		sectionStart: tokLCBrace,
 		sectionStartStr: "'{'",
-		sectionEnd: TokRCBrace,
+		sectionEnd: tokRCBrace,
 		sectionEndStr: "'}'",
 		maxErrors: 10,
 	}
 	switch how {
 		case ParserNL:
-			p.stmtEnd = TokNL
+			p.stmtEnd = tokNL
 			p.stmtEndStr = "newline"
 			t.SetSpace(" \t\r")
 		case ParserDiablo:
-			p.sectionStart = TokNL
+			p.sectionStart = tokNL
 			p.sectionStartStr = "newline"
-			p.sectionEnd = TokEnd
+			p.sectionEnd = tokEnd
 			p.sectionEndStr = "\"end\""
-			p.stmtEnd = TokNL
+			p.stmtEnd = tokNL
 			p.stmtEndStr = "newline"
 			t.SetSpace(" \t\r")
 		case ParserSemi:
@@ -354,13 +356,19 @@ func newConfParser(src int, data string, how int) (p *Parser, err error) {
 	return
 }
 
-func ConfParser(file string, how int) (p *Parser, err error) {
-	p, err = newConfParser(0, file, how)
+// Parse a configuration file into Go structures.
+// parserType is ParserSemi or ParserNL
+//
+// The error returned is actually of type ParseError. To get
+// at that, use err.(curlyconf.ParseError)
+func NewParser(file string, parserType int) (p *Parser, err error) {
+	p, err = newConfParser(0, file, parserType)
 	return
 }
 
-func ConfParserFromString(data string, how int) (p *Parser, err error) {
-	p, err = newConfParser(1, data, how)
+// Like NewParser, but parses a string instead of a file.
+func NewParserFromString(data string, parserType int) (p *Parser, err error) {
+	p, err = newConfParser(1, data, parserType)
 	return
 }
 

@@ -1,97 +1,97 @@
 package curlyconf
 
-const Re_ident string = `[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]*`
+const re_ident string = `[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]*`
 
-const Re_filename string = `\.{0,2}/[0-9a-zA-Z./_-]+`
+const re_filename string = `\.{0,2}/[0-9a-zA-Z./_-]+`
 
-const Re_dqstring string = `"(?:\\"|[^"])+(:?"|$)`
-const Re_bqstring string = "`[^`]*(:?`|$)"
+const re_dqstring string = `"(?:\\"|[^"])+(:?"|$)`
+const re_bqstring string = "`[^`]*(:?`|$)"
 
-const Re_hostname string = `(?i:([0-9a-z][0-9a-z-]*[0-9a-z]|[0-9a-z]+)` +
+const re_hostname string = `(?i:([0-9a-z][0-9a-z-]*[0-9a-z]|[0-9a-z]+)` +
 			    `(\.([0-9a-z][0-9a-z-]*[0-9a-z]|[0-9a-z]+)+))`;
-const Re_hostport string = `(` + Re_hostname + `:\d+)`
+const re_hostport string = `(` + re_hostname + `:\d+)`
 
-const Re_ipv4 string = `(([0-9]{1,3}\.){3}[0-9]{1,3})`
-const Re_ipv4port string = `((\*|` + Re_ipv4 + `):\d+)`
+const re_ipv4 string = `(([0-9]{1,3}\.){3}[0-9]{1,3})`
+const re_ipv4port string = `((\*|` + re_ipv4 + `):\d+)`
 
-const Re_ipv6 string =
+const re_ipv6 string =
 	`(?i:(((([0-9a-f]{1,4}:){1,7}|:)(:|(:[0-9a-f]{1,4}){1,7}))|` +
 	`([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}))`
-const Re_ipv6port string = `(\[` + Re_ipv6 + `\]:\d+)`
+const re_ipv6port string = `(\[` + re_ipv6 + `\]:\d+)`
 
-const Re_ngmatch string =
+const re_ngmatch string =
 	`[@!]?[0-9a-z+_*]+(\.[0-9a-z+_*]+)*`
 
-const Re_comment string = `(//|#)[^\n]*(?:\n|$)`
+const re_comment string = `(//|#)[^\n]*(?:\n|$)`
 
 const (
-	TokNL = 1 << iota
-	TokLCBrace
-	TokRCBrace
-	TokLBrace
-	TokRBrace
-	TokComma
-	TokSemi
-	TokEqual
-	TokInt
-	TokFloat
-	TokString
-	TokIdent
-	TokFilename
-	TokHostname
-	TokHostPort
-	TokIP
-	TokIPv4
-	TokIPv6
-	TokIpPort
-	TokIPv4Port
-	TokIPv6Port
-	TokNgMatch
-	TokEnd
-	TokComment
-	TokValue
+	tokNL = 1 << iota
+	tokLCBrace
+	tokRCBrace
+	tokLBrace
+	tokRBrace
+	tokComma
+	tokSemi
+	tokEqual
+	tokInt
+	tokFloat
+	tokString
+	tokIdent
+	tokFilename
+	tokHostname
+	tokHostPort
+	tokIP
+	tokIPv4
+	tokIPv6
+	tokIpPort
+	tokIPv4Port
+	tokIPv6Port
+	tokNgMatch
+	tokEnd
+	tokComment
+	tokValue
 )
 
-var tokdef = []*Tokdef{
-	&Tokdef{ Match: "\n", Token: TokNL },
-	&Tokdef{ Match: `{`, Token: TokLCBrace },
-	&Tokdef{ Match: `}`, Token: TokRCBrace },
-	&Tokdef{ Match: `\(`, Token: TokLBrace },
-	&Tokdef{ Match: `\)`, Token: TokRBrace },
-	&Tokdef{ Match: `,`, Token: TokComma },
-	&Tokdef{ Match: `;`, Token: TokSemi },
-	&Tokdef{ Match: `=`, Token: TokEqual },
-	&Tokdef{ Match: `\*`, Token: TokIP|TokIPv4|TokValue },
-	&Tokdef{ Match: `\d+[kKmMgGtT]`, Token: TokInt|TokValue },
-	&Tokdef{ Match: `\d+`, Token: TokInt|TokFloat|TokValue },
-	&Tokdef{ Match: `\d+\.\d+`, Token: TokFloat|TokValue },
-	&Tokdef{ Match: Re_dqstring, Token: TokString|TokValue },
-	&Tokdef{ Match: Re_ident, Token: TokIdent|TokValue },
-	&Tokdef{ Match: Re_filename, Token: TokFilename|TokValue },
-	&Tokdef{ Match: Re_hostname, Token: TokHostname|TokValue },
-	&Tokdef{ Match: Re_hostport, Token: TokHostPort|TokValue },
-	&Tokdef{ Match: Re_ipv4,  Token: TokIP|TokIPv4|TokValue },
-	&Tokdef{ Match: Re_ipv4port,  Token: TokIpPort|TokIPv4Port|TokValue },
-	&Tokdef{ Match: Re_ipv6, Token: TokIP|TokIPv6|TokValue },
-	&Tokdef{ Match: Re_ipv6port,  Token: TokIpPort|TokIPv6Port|TokValue },
-	&Tokdef{ Match: Re_ngmatch,  Token: TokNgMatch|TokValue },
-	&Tokdef{ Match: `end`, Token: TokEnd|TokValue },
-	&Tokdef{ Match: `(//|#)[^\n]*(?:\n|$)`, Token: TokComment },
+var tokdef = []*tokDef{
+	&tokDef{ Match: "\n", Token: tokNL },
+	&tokDef{ Match: `{`, Token: tokLCBrace },
+	&tokDef{ Match: `}`, Token: tokRCBrace },
+	&tokDef{ Match: `\(`, Token: tokLBrace },
+	&tokDef{ Match: `\)`, Token: tokRBrace },
+	&tokDef{ Match: `,`, Token: tokComma },
+	&tokDef{ Match: `;`, Token: tokSemi },
+	&tokDef{ Match: `=`, Token: tokEqual },
+	&tokDef{ Match: `\*`, Token: tokIP|tokIPv4|tokValue },
+	&tokDef{ Match: `\d+[kKmMgGtT]`, Token: tokInt|tokValue },
+	&tokDef{ Match: `\d+`, Token: tokInt|tokFloat|tokValue },
+	&tokDef{ Match: `\d+\.\d+`, Token: tokFloat|tokValue },
+	&tokDef{ Match: re_dqstring, Token: tokString|tokValue },
+	&tokDef{ Match: re_ident, Token: tokIdent|tokValue },
+	&tokDef{ Match: re_filename, Token: tokFilename|tokValue },
+	&tokDef{ Match: re_hostname, Token: tokHostname|tokValue },
+	&tokDef{ Match: re_hostport, Token: tokHostPort|tokValue },
+	&tokDef{ Match: re_ipv4,  Token: tokIP|tokIPv4|tokValue },
+	&tokDef{ Match: re_ipv4port,  Token: tokIpPort|tokIPv4Port|tokValue },
+	&tokDef{ Match: re_ipv6, Token: tokIP|tokIPv6|tokValue },
+	&tokDef{ Match: re_ipv6port,  Token: tokIpPort|tokIPv6Port|tokValue },
+	&tokDef{ Match: re_ngmatch,  Token: tokNgMatch|tokValue },
+	&tokDef{ Match: `end`, Token: tokEnd|tokValue },
+	&tokDef{ Match: `(//|#)[^\n]*(?:\n|$)`, Token: tokComment },
 }
 
-func ConfTokenizer(file string) (t *Tokenizer, err error) {
-	t, err = NewTokenizer(file, tokdef)
+func confTokenizer(file string) (t *tokenizer, err error) {
+	t, err = newTokenizer(file, tokdef)
 	if err == nil {
-		t.IgnoreComments(TokComment)
+		t.IgnoreComments(tokComment)
 		t.SetSpace(" \t\r\n")
 	}
 	return
 }
 
-func ConfTokenizerFromString(data string) (t *Tokenizer, err error) {
-	t, err = NewTokenizerFromString(data, tokdef)
+func confTokenizerFromString(data string) (t *tokenizer, err error) {
+	t, err = newTokenizerFromString(data, tokdef)
 	if err == nil {
-		t.IgnoreComments(TokComment)
+		t.IgnoreComments(tokComment)
 		t.SetSpace(" \t\r\n")
 	}
 	return

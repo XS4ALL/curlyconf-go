@@ -10,11 +10,11 @@ import (
 	"strings"
 )
 
-type StructWriter struct {
+type structWriter struct {
 	stru		reflect.Value
 }
 
-type Field struct {
+type structField struct {
 	ident		string
 	val		reflect.Value
 	elem		reflect.Value
@@ -30,19 +30,19 @@ func upperFirst(s string) (r string) {
 }
 
 //
-//	Constructor for StructWriter
+//	Constructor for structWriter
 //
-func NewStructWriter(obj interface{}) *StructWriter {
-	var s StructWriter
+func newStructWriter(obj interface{}) *structWriter {
+	var s structWriter
 	stru := reflect.ValueOf(obj)
 	switch stru.Kind() {
 	case reflect.Ptr:
         	s.stru = stru.Elem()
 	default:
-		panic("NewStructWriter: object is not a pointer-to-struct")
+		panic("newStructWriter: object is not a pointer-to-struct")
 	}
 	if s.stru.Kind() != reflect.Struct {
-		panic("NewStructWriter: object is not a pointer-to-struct")
+		panic("newStructWriter: object is not a pointer-to-struct")
 	}
 	return &s
 }
@@ -50,9 +50,9 @@ func NewStructWriter(obj interface{}) *StructWriter {
 //
 //	Get a description of the field of a struct.
 //
-func (s *StructWriter) Field(k string) (f *Field, err error) {
+func (s *structWriter) structField(k string) (f *structField, err error) {
 
-	f = &Field{}
+	f = &structField{}
 
 	idx := -1
 	tp := s.stru.Type()
@@ -115,22 +115,22 @@ func (s *StructWriter) Field(k string) (f *Field, err error) {
 	return
 }
 
-func (f *Field) IsBool() bool {
+func (f *structField) IsBool() bool {
 	return f.elemType.Kind() == reflect.Bool
 }
 
-func (f *Field) IsSlice() bool {
+func (f *structField) IsSlice() bool {
 	return f.fieldType.Kind() == reflect.Slice
 }
 
-func (f *Field) IsStruct() bool {
-	if CanSetValue(f.elemType) {
+func (f *structField) IsStruct() bool {
+	if canSetValue(f.elemType) {
 		return false
 	}
 	return f.elemType.Kind() == reflect.Struct
 }
 
-func (f *Field) HasName() (r bool) {
+func (f *structField) HasName() (r bool) {
 	if f.elemType.Kind() == reflect.Struct {
 	       _, r = f.elemType.FieldByName("Name_")
 	}
@@ -140,7 +140,7 @@ func (f *Field) HasName() (r bool) {
 //
 //	Initialize section.
 //
-func (f *Field) Section(s string) (err error) {
+func (f *structField) Section(s string) (err error) {
 
 	// If this is a pointer or a slice, allocate a new Value
 	switch f.fieldType.Kind() {
@@ -190,7 +190,7 @@ func (f *Field) Section(s string) (err error) {
 //
 //	Set a field to a value.
 //
-func (f *Field) Set(s string) (err error) {
+func (f *structField) Set(s string) (err error) {
 
 	// If this is a pointer or a slice, allocate a new Value
 	switch f.fieldType.Kind() {
@@ -206,11 +206,11 @@ func (f *Field) Set(s string) (err error) {
 			f.elem = f.val
 	}
 
-	err = SetValue(f.elem, s)
+	err = setValue(f.elem, s)
 	return
 }
 
-func (f *Field) PtrToElem() interface{} {
+func (f *structField) PtrToElem() interface{} {
 	return toPtr(f.elem).Interface()
 }
 
@@ -244,11 +244,11 @@ type Foo struct {
 func main() {
 	f := Foo{}
 
-	sw := NewStructWriter(&f)
-	var field *Field
+	sw := newStructWriter(&f)
+	var field *structField
 	var err error
 
-	if field, err = sw.Field("e1"); err != nil {
+	if field, err = sw.structField("e1"); err != nil {
 		fmt.Printf("%s\n", err)
 		return
 	}
@@ -256,7 +256,7 @@ func main() {
 	field.Set("Hallo")
 	field.Set("Daar")
 
-	if field, err = sw.Field("e3"); err != nil {
+	if field, err = sw.structField("e3"); err != nil {
 		fmt.Printf("%s\n", err)
 		return
 	}
@@ -264,21 +264,21 @@ func main() {
 	field.Set("Hallo")
 	field.Set("Daar")
 
-	if field, err = sw.Field("e6"); err != nil {
+	if field, err = sw.structField("e6"); err != nil {
 		fmt.Printf("%s\n", err)
 		return
 	}
 	fmt.Printf("e6: %+v\n", field.val)
 	field.Set("2h")
 
-	if field, err = sw.Field("e7"); err != nil {
+	if field, err = sw.structField("e7"); err != nil {
 		fmt.Printf("%s\n", err)
 		return
 	}
 	fmt.Printf("e7: %+v\n", field.val)
 	field.Set("ladida")
 
-	if field, err = sw.Field("e5"); err != nil {
+	if field, err = sw.structField("e5"); err != nil {
 		fmt.Printf("%s\n", err)
 		return
 	}
@@ -290,10 +290,10 @@ func main() {
 	}
 	sub := field.PtrToElem()
 	fmt.Printf("== %+v\n", sub)
-	subsw := NewStructWriter(sub)
+	subsw := newStructWriter(sub)
 
-	var sfield *Field
-	if sfield, err = subsw.Field("X3"); err != nil {
+	var sfield *structField
+	if sfield, err = subsw.structField("X3"); err != nil {
 		fmt.Printf("%s\n", err)
 		return
 	}
