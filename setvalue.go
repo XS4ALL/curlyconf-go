@@ -28,6 +28,8 @@ var colonPortRegexp = regexp.MustCompile(`:([0-9]+|[a-z]+[-0-9a-z]*[0-9a-z])$`)
 var ipv4Regexp = regexp.MustCompile(`^([0-9]+\.)[0-9]+$`)
 var ipv6Regexp = regexp.MustCompile(`:.*:`)
 
+var dayRegexp = regexp.MustCompile(`-?\d+d`)
+
 func suffixMult(s string) (r string, m uint64) {
 	m = 1
 	r = s
@@ -66,8 +68,31 @@ func convFloat(v string) (i float64, e error) {
 }
 
 func convDuration(v string) (val reflect.Value, e error) {
+
+	// perhaps unquote
+	if len(v) > 0 && v[0] == '"' {
+		v, e = strconv.Unquote(v)
+		if e != nil {
+			return
+		}
+	}
+
+	// add support for the 'd' modifier (days)
+	var days int64
+	v = dayRegexp.ReplaceAllStringFunc(v, func(in string) string {
+		in = in[:len(in)-1]
+		days, _ = strconv.ParseInt(in, 0, 64)
+		return ""
+	})
+	if v == "" {
+		v = "0s"
+	}
+
 	var d time.Duration
 	if d, e = time.ParseDuration(v); e == nil {
+		if days != 0 {
+			d += time.Duration(days * 24 * int64(time.Hour))
+		}
 		val = reflect.ValueOf(d)
 	}
 	return
