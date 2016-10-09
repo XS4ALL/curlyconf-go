@@ -25,7 +25,8 @@ you can obtain one at http://mozilla.org/MPL/2.0/.
 	person snoopy address 5.6.7.8;
 
 ## Example code
-
+	package main
+	
 	import (
 		"fmt"
 		"net"
@@ -42,7 +43,7 @@ you can obtain one at http://mozilla.org/MPL/2.0/.
 		Person	 []cfgPerson
 	}
 
-	func main {
+	func main() {
 		var top cfgMain
 		p, err := curlyconf.ConfParser("file.cfg", curlyconf.ParserSemi)
 		if err == nil {
