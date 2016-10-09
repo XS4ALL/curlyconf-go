@@ -62,7 +62,7 @@ end
 
 func testconf(t *testing.T, data string, how int) {
         var top Main
-        p, err := ConfParserFromString(data, how)
+        p, err := NewParserFromString(data, how)
         if err == nil {
                 err = p.Parse(&top)
         }
@@ -98,7 +98,10 @@ func testconf(t *testing.T, data string, how int) {
 	if top.File[0].Attr[1] != 2 {
 		t.Error("file1.attr != v1")
 	}
-	if top.File[0].Ptr == nil || *top.File[0].Ptr != `"Hello World"` {
+	if top.File[0].Ptr == nil {
+		t.Error("file1.ptr == nil")
+	}
+	if *top.File[0].Ptr != `Hello World` {
 		t.Error("file1.ptr != Hello World")
 	}
 }

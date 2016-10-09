@@ -13,7 +13,7 @@ This Source Code Form is subject to the terms of the Mozilla Public License,
 v. 2.0. If a copy of the MPL was not distributed with this file,
 you can obtain one at http://mozilla.org/MPL/2.0/.
 
-## Example config
+## Example config (file.cfg)
 
 	person charlie {
 		fullname "Charlie Brown";
@@ -25,8 +25,9 @@ you can obtain one at http://mozilla.org/MPL/2.0/.
 	person snoopy address 5.6.7.8;
 
 ## Example code
+
 	package main
-	
+
 	import (
 		"fmt"
 		"net"
@@ -45,12 +46,12 @@ you can obtain one at http://mozilla.org/MPL/2.0/.
 
 	func main() {
 		var top cfgMain
-		p, err := curlyconf.ConfParser("file.cfg", curlyconf.ParserSemi)
+		p, err := curlyconf.NewParser("file.cfg", curlyconf.ParserSemi)
 		if err == nil {
 			err = p.Parse(&top)
 		}
 		if err != nil {
-			fmt.Println(p.LongError())
+			fmt.Println(err.(*curlyconf.ParseError).LongError())
 			return
 		}
 		for i, n := range top.Person {
