@@ -211,7 +211,7 @@ func (f *structField) Set(s string) (err error) {
 }
 
 func (f *structField) PtrToElem() interface{} {
-	return toPtr(f.elem).Interface()
+	return f.elem.Addr().Interface()
 }
 
 /*

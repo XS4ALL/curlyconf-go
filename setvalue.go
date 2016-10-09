@@ -209,7 +209,7 @@ func setValue(val reflect.Value, s string) (err error) {
 
 	// If the type complies with the TextUnmarshaler interface, use it.
 	if val.CanInterface() {
-		intf := toPtr(val).Interface()
+		intf := val.Addr().Interface()
 		if obj, ok := intf.(encoding.TextUnmarshaler); ok {
 			err = obj.UnmarshalText([]byte(s))
 			return
