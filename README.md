@@ -3,16 +3,6 @@
 Curlyconf is a configuration file reader for the configuration
 file format used by, for example, named.conf and dhcpd.conf.
 
-## License
-
-Copyight (C) XS4ALL Internet bv 2016
-
-Mozilla Public License 2.0
-
-This Source Code Form is subject to the terms of the Mozilla Public License,
-v. 2.0. If a copy of the MPL was not distributed with this file,
-you can obtain one at http://mozilla.org/MPL/2.0/.
-
 ## Example config (file.cfg)
 
 	person charlie {
@@ -31,7 +21,7 @@ you can obtain one at http://mozilla.org/MPL/2.0/.
 	import (
 		"fmt"
 		"net"
-		"github.xs4all.net/XS4ALL/curlyconf-go"
+		"github.com/XS4ALL/curlyconf-go"
 	)
 
 	type cfgPerson struct {
@@ -86,5 +76,21 @@ above types, a value will be allocated and the pointer set to it.
 
 ## Sections and structs
 
-T.B.D.
+Sections in the config file correspond to structs in the code.
+The main config is always a struct, see cfgMain in the example above.
+
+A struct can contain values and other structs. It can container
+pointers to values/structs - if the pointer is nil, that
+configuration option was not set. It can also contain slices
+of values/structs or pointers to those.
+
+Sections can be "flattened"- as in the example above,
+
+	person snoopy {
+		fullname "Snoopy";
+	}
+
+is the same as
+
+	person snoopy fullname "Snoopy";
 
