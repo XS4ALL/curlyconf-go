@@ -11,12 +11,12 @@ const re_hostname string = `(?i:([0-9a-z][0-9a-z-]*[0-9a-z]|[0-9a-z]+)` +
 			    `(\.([0-9a-z][0-9a-z-]*[0-9a-z]|[0-9a-z]+)+))`;
 const re_hostport string = `(` + re_hostname + `:\d+)`
 
-const re_ipv4 string = `(([0-9]{1,3}\.){3}[0-9]{1,3})`
+const re_ipv4 string = `(([0-9]{1,3}\.){3}[0-9]{1,3})(/[0-9]+)?`
 const re_ipv4port string = `((\*|` + re_ipv4 + `):\d+)`
 
 const re_ipv6 string =
 	`(?i:(((([0-9a-f]{1,4}:){1,7}|:)(:|(:[0-9a-f]{1,4}){1,7}))|` +
-	`([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}))`
+	`([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}))(/[0-9]+)?`
 const re_ipv6port string = `(\[` + re_ipv6 + `\]:\d+)`
 
 const re_ngmatch string =
