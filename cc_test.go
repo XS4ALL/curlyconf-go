@@ -7,6 +7,7 @@ package curlyconf
 
 import (
 	"fmt"
+	"net"
 	"testing"
 )
 
@@ -21,6 +22,7 @@ type File struct {
 
 type Main struct {
 	File		[]File
+	Net		[]net.IPNet
 }
 
 func (a *Attr) UnmarshalText(s []byte) (err error) {
@@ -47,6 +49,9 @@ file file1 ptr "Hello World";
 file file2 {
 	directory /var/tmp;
 }
+
+net 2001:888:4::42:7d/120;
+net 194.109.6.66/32;
 `
 
 var conf2 string = `
