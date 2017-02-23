@@ -132,7 +132,7 @@ func (f *structField) IsStruct() bool {
 
 func (f *structField) HasName() (r bool) {
 	if f.elemType.Kind() == reflect.Struct {
-	       _, r = f.elemType.FieldByName("Name_")
+		_, r = f.elemType.FieldByName("Name_")
 	}
 	return
 }

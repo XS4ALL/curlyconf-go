@@ -176,6 +176,12 @@ func (p *Parser) section(sname string, field *structField) {
 			return
 		}
 		name = string(tok.Value)
+		if len(name) > 0 && name[0] == '"' {
+			s, err := strconv.Unquote(name)
+			if err == nil {
+				name = s
+			}
+		}
 	}
 
 	//
